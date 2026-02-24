@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Guard Booth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Login Screen Styles */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #2d3748;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .login-form {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .login-error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            border: 1px solid #fc8181;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #718096;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .header-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 5px;
+            line-height: 1.2;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .status-connected {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-disconnected {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #2d3748;
+            font-size: 20px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .photo-capture {
+            margin-bottom: 20px;
+        }
+
+        .photo-capture label {
+            display: block;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .camera-container {
+            position: relative;
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        video {
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+        }
+
+        video.active {
+            display: block;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+            min-height: 44px; /* Better touch target for mobile */
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-info {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #3182ce;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .records-list {
+            margin-top: 20px;
+        }
+
+        .record-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .record-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .record-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-checked-in {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-checked-out {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            color: #4a5568;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .record-photos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .photo-item img {
+            width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .photo-item img:hover {
+            transform: scale(1.05);
+        }
+
+        .photo-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        .alert-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .spinner {
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .export-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 0;
+            }
+
+            .header {
+                padding: 12px 15px;
+                border-radius: 8px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-bottom: 3px;
+            }
+
+            .header p {
+                font-size: 11px;
+                margin-bottom: 8px;
+            }
+
+            .connection-status {
+                font-size: 10px;
+                padding: 4px 10px;
+            }
+
+            .logout-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .tabs {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .tab-btn {
+                padding: 12px;
+                font-size: 15px;
+            }
+
+            .tab-content {
+                padding: 20px 15px;
+                border-radius: 8px;
+            }
+
+            .form-section h2 {
+                font-size: 18px;
+            }
+
+            .record-details {
+                grid-template-columns: 1fr;
+            }
+
+            .export-section {
+                flex-direction: column;
+            }
+
+            .export-section .btn {
+                width: 100%;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 15px;
+            }
+
+            .record-card {
+                padding: 15px;
+            }
+
+            .camera-container {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 16px;
+            }
+
+            .header p {
+                font-size: 10px;
+            }
+
+            .logout-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            .tab-btn {
+                font-size: 14px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen (shown while checking auth) -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-overlay" style="display: none;">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>🛡️ Security Guard Booth</h1>
+                <p>Please login to continue</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="username">Username or Email</label>
+                    <input type="text" id="username" placeholder="Enter username or email" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+                </div>
+                <div id="login-error" class="login-error" style="display: none;"></div>
+                <button class="btn btn-primary login-btn" onclick="handleLogin()">🔐 Login</button>
+            </div>
+            <div class="login-footer">
+                <small>Authorized personnel only</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden until logged in) -->
+    <div id="main-app" style="display: none;">
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>🛡️ Security Guard Booth</h1>
+                    <p>Visitor Check-In & Check-Out System</p>
+                </div>
+                <button class="btn btn-secondary logout-btn" onclick="handleLogout()">🚪 Logout</button>
+            </div>
+            <div id="connectionStatus" class="connection-status status-disconnected">⚠️ Not Connected</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('checkin')">Check-In</button>
+            <button class="tab-btn" onclick="switchTab('checkout')">Check-Out</button>
+            <button class="tab-btn" onclick="switchTab('records')">Records</button>
+        </div>
+
+        <!-- Check-In Tab -->
+        <div id="checkin-tab" class="tab-content active">
+            <div class="form-section">
+                <h2>📸 Capture Photos</h2>
+                
+                <div class="photo-capture">
+                    <label>License Plate Photo</label>
+                    <div class="camera-container">
+                        <video id="licensePlateVideo" autoplay playsinline></video>
+                        <img id="licensePlatePreview" class="preview-img" style="display: none;">
+                        <div id="licensePlateButtons">
+                            <button class="btn btn-primary" onclick="startCamera('licensePlate')">📷 Open Camera</button>
+                            <button class="btn btn-success" id="captureLicensePlate" style="display: none;" onclick="capturePhoto('licensePlate')">✓ Capture</button>
+                            <button class="btn btn-secondary" id="retakeLicensePlate" style="display: none;" onclick="retakePhoto('licensePlate')">↻ Retake</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="photo-capture">
+                    <label>ID Card / Driver's License Photo</label>
+                    <div class="camera-container">
+                        <video id="idCardVideo" autoplay playsinline></video>
+                        <img id="idCardPreview" class="preview-img" style="display: none;">
+                        <div id="idCardButtons">
+                            <button class="btn btn-primary" onclick="startCamera('idCard')">📷 Open Camera</button>
+                            <button class="btn btn-success" id="captureIdCard" style="display: none;" onclick="capturePhoto('idCard')">✓ Capture</button>
+                            <button class="btn btn-secondary" id="retakeIdCard" style="display: none;" onclick="retakePhoto('idCard')">↻ Retake</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-success" id="checkInBtn" onclick="checkIn()">✓ Complete Check-In</button>
+            </div>
+        </div>
+
+        <!-- Check-Out Tab -->
+        <div id="checkout-tab" class="tab-content">
+            <div class="form-section">
+                <h2>🔍 Find Visitor to Check Out</h2>
+                <div class="search-box">
+                    <input type="text" id="checkoutSearch" placeholder="Search by check-in time or ID..." oninput="searchActiveVisitors()">
+                </div>
+                <div id="activeVisitorsList" class="records-list"></div>
+            </div>
+        </div>
+
+        <!-- Records Tab -->
+        <div id="records-tab" class="tab-content">
+            <div class="form-section">
+                <h2>📋 All Records</h2>
+                
+                <div class="export-section">
+                    <button class="btn btn-info" onclick="exportToCSV()">📊 Export to CSV</button>
+                    <button class="btn btn-info" onclick="exportToJSON()">💾 Export to JSON</button>
+                    <button class="btn btn-secondary" onclick="exportPhotos()">📦 Download Photos (ZIP)</button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="recordsSearch" placeholder="Search by check-in/out time or ID..." oninput="searchAllRecords()">
+                </div>
+                <div id="allRecordsList" class="records-list"></div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- End of main-app -->
+
+    <canvas id="canvas"></canvas>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- JSZip Library for creating ZIP files -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+    <script>
+        // ==========================================
+        // SUPABASE CONFIGURATION
+        // ==========================================
+        // REPLACE THESE WITH YOUR SUPABASE CREDENTIALS
+        const SUPABASE_URL = 'https://aapabdjqyioumtblguhx.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhcGFiZGpxeWlvdW10YmxndWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQ2NDQsImV4cCI6MjA4NjE1MDY0NH0.WXHSO1ZRHDT-CV6EMtPKLj6TRztZp5FQTbaDfa1gnkk';
+
+        let supabaseClient = null;
+        let isConnected = false;
+        let currentUser = null;
+
+        // ==========================================
+        // AUTHENTICATION FUNCTIONS (SECURE)
+        // ==========================================
+        
+        // Check if user is authenticated on page load
+        async function checkAuth() {
+            console.log('🔍 Starting auth check...');
+            
+            if (!supabaseClient) {
+                console.error('❌ Supabase client not initialized');
+                showLoginScreen();
+                return false;
+            }
+
+            try {
+                console.log('📡 Getting session from Supabase...');
+                
+                // Add timeout to prevent infinite loading
+                const sessionPromise = supabaseClient.auth.getSession();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Session check timeout')), 10000)
+                );
+                
+                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+
+                console.log('Session result:', session ? 'Found' : 'Not found', 'Error:', error);
+
+                if (error) {
+                    console.error('❌ Session error:', error);
+                    showLoginScreen();
+                    return false;
+                }
+
+                if (!session) {
+                    console.log('ℹ️ No session found - showing login screen');
+                    showLoginScreen();
+                    return false;
+                }
+
+                console.log('✅ Session found for:', session.user.email);
+                console.log('📊 Checking authorization in database...');
+
+                // Check if user is in authorized_users table
+                const { data: authorizedUser, error: authError } = await supabaseClient
+                    .from('authorized_users')
+                    .select('*')
+                    .eq('email', session.user.email)
+                    .eq('is_active', true)
+                    .single();
+
+                console.log('Authorization check result:', authorizedUser ? 'Authorized' : 'Not authorized', 'Error:', authError);
+
+                if (authError || !authorizedUser) {
+                    console.error('❌ User not authorized:', session.user.email, authError);
+                    await supabaseClient.auth.signOut();
+                    alert('Your account is not authorized to access this system. Please contact an administrator.');
+                    showLoginScreen();
+                    return false;
+                }
+
+                console.log('✅ User authorized:', authorizedUser.username);
+
+                // User is authenticated and authorized
+                currentUser = {
+                    username: authorizedUser.username,
+                    email: session.user.email,
+                    name: authorizedUser.full_name,
+                    role: authorizedUser.role
+                };
+                
+                console.log('✅ Auth check complete - showing main app');
+                showMainApp();
+                return true;
+            } catch (error) {
+                console.error('❌ Auth check error:', error);
+                alert('Error checking authentication: ' + error.message + '. Redirecting to login.');
+                showLoginScreen();
+                return false;
+            }
+        }
+
+        // Handle login with Supabase Auth
+        async function handleLogin() {
+            const usernameOrEmail = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+            const loginBtn = document.querySelector('.login-btn');
+
+            // Clear previous errors
+            errorDiv.style.display = 'none';
+
+            // Validate inputs
+            if (!usernameOrEmail || !password) {
+                errorDiv.textContent = '⚠️ Please enter both username/email and password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Disable login button
+            loginBtn.disabled = true;
+            loginBtn.textContent = '🔄 Logging in...';
+
+            try {
+                let userEmail = usernameOrEmail;
+
+                // Check if input is a username (not an email)
+                if (!usernameOrEmail.includes('@')) {
+                    console.log('Looking up email for username:', usernameOrEmail);
+                    
+                    // Use RPC function to look up email by username
+                    const { data: emailData, error: lookupError } = await supabaseClient
+                        .rpc('get_email_by_username', { username_input: usernameOrEmail });
+
+                    console.log('Lookup result:', emailData, 'Error:', lookupError);
+
+                    if (lookupError || !emailData) {
+                        console.error('Username lookup failed:', lookupError);
+                        throw new Error('Invalid username or password');
+                    }
+
+                    userEmail = emailData;
+                    console.log('Found email:', userEmail);
+                }
+
+                // Sign in with Supabase Auth using email
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: userEmail,
+                    password: password
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Check if user is authorized
+                const { data: authorizedUser, error: authError } = await supabaseClient
+                    .from('authorized_users')
+                    .select('*')
+                    .eq('email', userEmail)
+                    .eq('is_active', true)
+                    .single();
+
+                if (authError || !authorizedUser) {
+                    await supabaseClient.auth.signOut();
+                    throw new Error('Your account is not authorized to access this system.');
+                }
+
+                // Successful login
+                currentUser = {
+                    username: authorizedUser.username,
+                    email: data.user.email,
+                    name: authorizedUser.full_name,
+                    role: authorizedUser.role
+                };
+
+                // Clear form
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                
+                showMainApp();
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Show user-friendly error message
+                let errorMessage = '❌ ';
+                if (error.message.includes('Invalid login credentials') || error.message.includes('Invalid username')) {
+                    errorMessage += 'Invalid username/email or password';
+                } else if (error.message.includes('not authorized')) {
+                    errorMessage += error.message;
+                } else if (error.message.includes('Email not confirmed')) {
+                    errorMessage += 'Please check your email and confirm your account first';
+                } else {
+                    errorMessage += 'Login failed. Please try again.';
+                }
+                
+                errorDiv.textContent = errorMessage;
+                errorDiv.style.display = 'block';
+                
+                // Clear password field
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            } finally {
+                // Re-enable login button
+                loginBtn.disabled = false;
+                loginBtn.textContent = '🔐 Login';
+            }
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            const confirmed = confirm('Are you sure you want to logout?');
+            if (!confirmed) return;
+
+            try {
+                // Stop any camera streams
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+
+                // Sign out from Supabase
+                await supabaseClient.auth.signOut();
+                currentUser = null;
+                
+                showLoginScreen();
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Error logging out. Please try again.');
+            }
+        }
+
+        // Show login screen
+        function showLoginScreen() {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
+            setTimeout(() => {
+                const usernameInput = document.getElementById('username');
+                if (usernameInput) usernameInput.focus();
+            }, 100);
+        }
+
+        // Show main app
+        function showMainApp() {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            
+            if (currentUser) {
+                console.log(`✅ Logged in as: ${currentUser.name || currentUser.email} (${currentUser.role})`);
+            }
+        }
+
+        // Allow Enter key to submit login
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const usernameInput = document.getElementById('username');
+            
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleLogin();
+                    }
+                });
+            }
+            
+            if (usernameInput) {
+                usernameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleLogin();
+                    }
+                });
+            }
+        });
+
+        // Initialize Supabase
+        function initSupabase() {
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY_HERE') {
+                updateConnectionStatus(false);
+                console.warn('⚠️ Supabase not configured. Please add your credentials.');
+                return false;
+            }
+
+            try {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Set up auth state listener to persist sessions
+                supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                    console.log('Auth state changed:', event, session);
+                    
+                    if (event === 'SIGNED_IN' && session) {
+                        // User signed in - check if authorized
+                        await checkAuth();
+                    } else if (event === 'SIGNED_OUT') {
+                        // User signed out
+                        currentUser = null;
+                        showLoginScreen();
+                    } else if (event === 'TOKEN_REFRESHED') {
+                        // Session token was refreshed
+                        console.log('Session refreshed');
+                    } else if (event === 'USER_UPDATED') {
+                        // User data updated
+                        console.log('User updated');
+                    }
+                });
+                
+                updateConnectionStatus(true);
+                console.log('✅ Supabase connected');
+                return true;
+            } catch (error) {
+                console.error('❌ Supabase connection error:', error);
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.className = 'connection-status status-connected';
+                statusEl.textContent = '✓ Connected to Cloud';
+            } else {
+                statusEl.className = 'connection-status status-disconnected';
+                statusEl.textContent = '⚠️ Not Connected';
+            }
+        }
+
+        // ==========================================
+        // GLOBAL VARIABLES
+        // ==========================================
+        let currentStream = null;
+        let licensePlatePhoto = null;
+        let idCardPhoto = null;
+        let visitors = [];
+
+        // ==========================================
+        // DATABASE OPERATIONS
+        // ==========================================
+        
+        // Load all visitors from Supabase
+        async function loadVisitors() {
+            if (!isConnected) {
+                console.log('Using local data (Supabase not connected)');
+                visitors = JSON.parse(localStorage.getItem('visitors')) || [];
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('visitors')
+                    .select('*')
+                    .order('check_in_time', { ascending: false });
+
+                if (error) throw error;
+
+                visitors = data.map(v => ({
+                    id: v.id,
+                    licensePlatePhoto: v.license_plate_photo,
+                    idCardPhoto: v.id_card_photo,
+                    checkInTime: v.check_in_time,
+                    checkOutTime: v.check_out_time,
+                    status: v.status
+                }));
+
+                console.log(`✅ Loaded ${visitors.length} visitors from database`);
+            } catch (error) {
+                console.error('Error loading visitors:', error);
+                alert('Error loading data from database. Please check your connection.');
+            }
+        }
+
+        // Save visitor to Supabase
+        async function saveVisitor(visitor) {
+            if (!isConnected) {
+                // Fallback to localStorage
+                visitors.push(visitor);
+                localStorage.setItem('visitors', JSON.stringify(visitors));
+                return true;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('visitors')
+                    .insert([{
+                        id: visitor.id,
+                        license_plate_photo: visitor.licensePlatePhoto,
+                        id_card_photo: visitor.idCardPhoto,
+                        check_in_time: visitor.checkInTime,
+                        check_out_time: visitor.checkOutTime,
+                        status: visitor.status
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                visitors.unshift(visitor);
+                console.log('✅ Visitor saved to database');
+                return true;
+            } catch (error) {
+                console.error('Error saving visitor:', error);
+                alert('Error saving to database. Please try again.');
+                return false;
+            }
+        }
+
+        // Update visitor in Supabase (for check-out)
+        async function updateVisitor(visitorId, updates) {
+            if (!isConnected) {
+                // Fallback to localStorage
+                const visitor = visitors.find(v => v.id === visitorId);
+                if (visitor) {
+                    Object.assign(visitor, updates);
+                    localStorage.setItem('visitors', JSON.stringify(visitors));
+                }
+                return true;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('visitors')
+                    .update({
+                        check_out_time: updates.checkOutTime,
+                        status: updates.status
+                    })
+                    .eq('id', visitorId);
+
+                if (error) throw error;
+
+                const visitor = visitors.find(v => v.id === visitorId);
+                if (visitor) {
+                    Object.assign(visitor, updates);
+                }
+
+                console.log('✅ Visitor updated in database');
+                return true;
+            } catch (error) {
+                console.error('Error updating visitor:', error);
+                alert('Error updating database. Please try again.');
+                return false;
+            }
+        }
+
+        // ==========================================
+        // TAB SWITCHING
+        // ==========================================
+        async function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            if (tabName === 'checkout') {
+                await loadVisitors();
+                displayActiveVisitors();
+            } else if (tabName === 'records') {
+                await loadVisitors();
+                displayAllRecords();
+            }
+        }
+
+        // ==========================================
+        // CAMERA FUNCTIONS
+        // ==========================================
+        async function startCamera(type) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' },
+                    audio: false 
+                });
+                
+                currentStream = stream;
+                const video = document.getElementById(`${type}Video`);
+                video.srcObject = stream;
+                video.classList.add('active');
+                
+                document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'inline-block';
+            } catch (error) {
+                alert('Unable to access camera. Please ensure camera permissions are granted.');
+                console.error('Camera error:', error);
+            }
+        }
+
+        function capturePhoto(type) {
+            const video = document.getElementById(`${type}Video`);
+            const canvas = document.getElementById('canvas');
+            const preview = document.getElementById(`${type}Preview`);
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const photoData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            if (type === 'licensePlate') {
+                licensePlatePhoto = photoData;
+            } else {
+                idCardPhoto = photoData;
+            }
+            
+            preview.src = photoData;
+            preview.style.display = 'block';
+            video.classList.remove('active');
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'none';
+            document.getElementById(`retake${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'inline-block';
+        }
+
+        function retakePhoto(type) {
+            const preview = document.getElementById(`${type}Preview`);
+            preview.style.display = 'none';
+            
+            if (type === 'licensePlate') {
+                licensePlatePhoto = null;
+            } else {
+                idCardPhoto = null;
+            }
+            
+            document.getElementById(`retake${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'none';
+            startCamera(type);
+        }
+
+        // ==========================================
+        // CHECK-IN FUNCTION
+        // ==========================================
+        async function checkIn() {
+            if (!licensePlatePhoto || !idCardPhoto) {
+                alert('Please capture both license plate and ID card photos before checking in.');
+                return;
+            }
+
+            const checkInBtn = document.getElementById('checkInBtn');
+            checkInBtn.disabled = true;
+            checkInBtn.textContent = 'Saving...';
+
+            const visitor = {
+                id: Date.now(),
+                licensePlatePhoto: licensePlatePhoto,
+                idCardPhoto: idCardPhoto,
+                checkInTime: new Date().toISOString(),
+                checkOutTime: null,
+                status: 'checked-in'
+            };
+
+            const success = await saveVisitor(visitor);
+
+            if (success) {
+                // Reset form
+                licensePlatePhoto = null;
+                idCardPhoto = null;
+                document.getElementById('licensePlatePreview').style.display = 'none';
+                document.getElementById('idCardPreview').style.display = 'none';
+                document.getElementById('retakeLicensePlate').style.display = 'none';
+                document.getElementById('retakeIdCard').style.display = 'none';
+
+                alert('✓ Check-in completed successfully!');
+            }
+
+            checkInBtn.disabled = false;
+            checkInBtn.textContent = '✓ Complete Check-In';
+        }
+
+        // ==========================================
+        // CHECK-OUT FUNCTION
+        // ==========================================
+        async function checkOut(visitorId) {
+            const confirmed = confirm('Are you sure you want to check out this visitor?');
+            if (!confirmed) return;
+
+            const success = await updateVisitor(visitorId, {
+                checkOutTime: new Date().toISOString(),
+                status: 'checked-out'
+            });
+
+            if (success) {
+                displayActiveVisitors();
+                alert('✓ Check-out completed successfully!');
+            }
+        }
+
+        // ==========================================
+        // DISPLAY FUNCTIONS
+        // ==========================================
+        function displayActiveVisitors(searchTerm = '') {
+            const activeVisitors = visitors.filter(v => v.status === 'checked-in');
+            const container = document.getElementById('activeVisitorsList');
+            
+            let filteredVisitors = activeVisitors;
+            if (searchTerm) {
+                filteredVisitors = activeVisitors.filter(v => 
+                    formatDateTime(v.checkInTime).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    v.id.toString().includes(searchTerm)
+                );
+            }
+
+            if (filteredVisitors.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3>No active visitors</h3>
+                        <p>All visitors have checked out or no check-ins yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredVisitors.map(visitor => `
+                <div class="record-card">
+                    <div class="record-header">
+                        <h3 style="color: #2d3748;">Visitor #${visitor.id}</h3>
+                        <span class="record-status status-checked-in">Checked In</span>
+                    </div>
+                    <div class="record-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Check-In Time</div>
+                            <div class="detail-value">${formatDateTime(visitor.checkInTime)}</div>
+                        </div>
+                    </div>
+                    <div class="record-photos">
+                        <div class="photo-item">
+                            <img src="${visitor.licensePlatePhoto}" alt="License Plate" onclick="viewPhoto('${visitor.licensePlatePhoto}')">
+                            <div class="photo-label">License Plate</div>
+                        </div>
+                        <div class="photo-item">
+                            <img src="${visitor.idCardPhoto}" alt="ID Card" onclick="viewPhoto('${visitor.idCardPhoto}')">
+                            <div class="photo-label">ID Card</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="checkOut(${visitor.id})">Check Out</button>
+                </div>
+            `).join('');
+        }
+
+        function displayAllRecords(searchTerm = '') {
+            const container = document.getElementById('allRecordsList');
+            
+            let filteredVisitors = visitors;
+            if (searchTerm) {
+                filteredVisitors = visitors.filter(v => 
+                    formatDateTime(v.checkInTime).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (v.checkOutTime && formatDateTime(v.checkOutTime).toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    v.id.toString().includes(searchTerm)
+                );
+            }
+
+            if (filteredVisitors.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3>No records found</h3>
+                        <p>Start by checking in visitors.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredVisitors.map(visitor => `
+                <div class="record-card">
+                    <div class="record-header">
+                        <h3 style="color: #2d3748;">Visitor #${visitor.id}</h3>
+                        <span class="record-status ${visitor.status === 'checked-in' ? 'status-checked-in' : 'status-checked-out'}">
+                            ${visitor.status === 'checked-in' ? 'Checked In' : 'Checked Out'}
+                        </span>
+                    </div>
+                    <div class="record-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Check-In Time</div>
+                            <div class="detail-value">${formatDateTime(visitor.checkInTime)}</div>
+                        </div>
+                        ${visitor.checkOutTime ? `
+                            <div class="detail-item">
+                                <div class="detail-label">Check-Out Time</div>
+                                <div class="detail-value">${formatDateTime(visitor.checkOutTime)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Duration</div>
+                                <div class="detail-value">${calculateDuration(visitor.checkInTime, visitor.checkOutTime)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="record-photos">
+                        <div class="photo-item">
+                            <img src="${visitor.licensePlatePhoto}" alt="License Plate" onclick="viewPhoto('${visitor.licensePlatePhoto}')">
+                            <div class="photo-label">License Plate</div>
+                        </div>
+                        <div class="photo-item">
+                            <img src="${visitor.idCardPhoto}" alt="ID Card" onclick="viewPhoto('${visitor.idCardPhoto}')">
+                            <div class="photo-label">ID Card</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // SEARCH FUNCTIONS
+        // ==========================================
+        function searchActiveVisitors() {
+            const searchTerm = document.getElementById('checkoutSearch').value;
+            displayActiveVisitors(searchTerm);
+        }
+
+        function searchAllRecords() {
+            const searchTerm = document.getElementById('recordsSearch').value;
+            displayAllRecords(searchTerm);
+        }
+
+        // ==========================================
+        // EXPORT FUNCTIONS
+        // ==========================================
+        
+        function exportToCSV() {
+            if (visitors.length === 0) {
+                alert('No records to export.');
+                return;
+            }
+
+            // CSV Headers
+            let csv = 'ID,Check-In Time,Check-Out Time,Status,Duration (minutes)\n';
+
+            // CSV Rows
+            visitors.forEach(visitor => {
+                const duration = visitor.checkOutTime ? 
+                    Math.round((new Date(visitor.checkOutTime) - new Date(visitor.checkInTime)) / 60000) : 'N/A';
+                
+                csv += `${visitor.id},`;
+                csv += `"${formatDateTime(visitor.checkInTime)}",`;
+                csv += `"${visitor.checkOutTime ? formatDateTime(visitor.checkOutTime) : 'Still Checked In'}",`;
+                csv += `${visitor.status},`;
+                csv += `${duration}\n`;
+            });
+
+            // Download CSV
+            downloadFile(csv, `security-booth-records-${getDateString()}.csv`, 'text/csv');
+            alert(`✓ Exported ${visitors.length} records to CSV`);
+        }
+
+        function exportToJSON() {
+            if (visitors.length === 0) {
+                alert('No records to export.');
+                return;
+            }
+
+            const jsonData = JSON.stringify(visitors, null, 2);
+            downloadFile(jsonData, `security-booth-records-${getDateString()}.json`, 'application/json');
+            alert(`✓ Exported ${visitors.length} records to JSON`);
+        }
+
+        async function exportPhotos() {
+            if (visitors.length === 0) {
+                alert('No photos to export.');
+                return;
+            }
+
+            const confirmed = confirm(`This will create a ZIP file with ${visitors.length * 2} photos. Continue?`);
+            if (!confirmed) return;
+
+            // Show loading message
+            const originalBtn = event.target;
+            const originalText = originalBtn.textContent;
+            originalBtn.disabled = true;
+            originalBtn.textContent = '📦 Creating ZIP file...';
+
+            try {
+                // Create a new JSZip instance
+                const zip = new JSZip();
+                
+                // Create a folder in the ZIP
+                const photoFolder = zip.folder('security-booth-photos');
+
+                // Add each photo to the ZIP
+                for (let i = 0; i < visitors.length; i++) {
+                    const visitor = visitors[i];
+                    
+                    // Convert base64 to binary for license plate photo
+                    const licensePlateBase64 = visitor.licensePlatePhoto.split(',')[1];
+                    photoFolder.file(
+                        `visitor-${visitor.id}-license-plate.jpg`,
+                        licensePlateBase64,
+                        { base64: true }
+                    );
+
+                    // Convert base64 to binary for ID card photo
+                    const idCardBase64 = visitor.idCardPhoto.split(',')[1];
+                    photoFolder.file(
+                        `visitor-${visitor.id}-id-card.jpg`,
+                        idCardBase64,
+                        { base64: true }
+                    );
+
+                    // Update button with progress
+                    originalBtn.textContent = `📦 Adding photos... (${i + 1}/${visitors.length})`;
+                }
+
+                // Generate the ZIP file
+                originalBtn.textContent = '📦 Generating ZIP file...';
+                const zipBlob = await zip.generateAsync({ 
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+
+                // Download the ZIP file
+                const url = URL.createObjectURL(zipBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `security-booth-photos-${getDateString()}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                // Reset button
+                originalBtn.disabled = false;
+                originalBtn.textContent = originalText;
+
+                alert(`✓ Successfully created ZIP file with ${visitors.length * 2} photos!`);
+            } catch (error) {
+                console.error('Error creating ZIP:', error);
+                alert('Error creating ZIP file. Please try again.');
+                
+                // Reset button
+                originalBtn.disabled = false;
+                originalBtn.textContent = originalText;
+            }
+        }
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function getDateString() {
+            const now = new Date();
+            return now.toISOString().split('T')[0];
+        }
+
+        function formatDateTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function calculateDuration(startTime, endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            const diff = end - start;
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+
+        function viewPhoto(photoData) {
+            const win = window.open();
+            win.document.write(`
+                <html>
+                    <head>
+                        <title>Photo View</title>
+                        <style>
+                            body { 
+                                margin: 0; 
+                                display: flex; 
+                                justify-content: center; 
+                                align-items: center; 
+                                min-height: 100vh; 
+                                background: #000;
+                            }
+                            img { 
+                                max-width: 100%; 
+                                max-height: 100vh; 
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${photoData}" alt="Photo">
+                    </body>
+                </html>
+            `);
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.addEventListener('load', async () => {
+            console.log('🚀 App loading...');
+            
+            try {
+                // Initialize Supabase first (needed for auth check)
+                const supabaseInitialized = initSupabase();
+                
+                if (!supabaseInitialized) {
+                    console.error('❌ Failed to initialize Supabase');
+                    alert('Failed to connect to database. Please check your internet connection and refresh.');
+                    showLoginScreen();
+                    return;
+                }
+                
+                console.log('✅ Supabase initialized');
+                
+                // Add a safety timeout - if auth check takes too long, show login
+                const timeoutId = setTimeout(() => {
+                    console.warn('⚠️ Auth check taking too long - showing login screen');
+                    showLoginScreen();
+                }, 15000); // 15 second timeout
+                
+                // Check authentication (async - must await)
+                const isAuthenticated = await checkAuth();
+                
+                // Clear the timeout since we got a response
+                clearTimeout(timeoutId);
+                
+                if (isAuthenticated) {
+                    console.log('✅ Authenticated - loading data...');
+                    // Only load data if authenticated
+                    try {
+                        await loadVisitors();
+                        displayAllRecords();
+                        console.log('✅ App fully loaded');
+                    } catch (error) {
+                        console.error('❌ Error loading data:', error);
+                        alert('Error loading data. Please refresh the page.');
+                    }
+                } else {
+                    console.log('ℹ️ Not authenticated - login required');
+                }
+            } catch (error) {
+                console.error('❌ Initialization error:', error);
+                alert('Error starting application: ' + error.message);
+                showLoginScreen();
+            }
+        });
+    </script>
+</body>
+</html>
