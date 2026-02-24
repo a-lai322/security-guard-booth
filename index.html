@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Guard Booth</title>
+    <!-- Favicon to prevent 404 error -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
     <style>
         * {
             margin: 0;
@@ -797,57 +799,82 @@
             try {
                 console.log('📡 Getting session from Supabase...');
                 
-                // Get session with simpler approach
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-
-                console.log('Session result:', session ? 'Found' : 'Not found', 'Error:', error);
-
-                if (error) {
-                    console.error('❌ Session error:', error);
+                // AGGRESSIVE TIMEOUT - Force show login screen after 5 seconds
+                const forceLoginTimeout = setTimeout(() => {
+                    console.error('🚨 FORCE TIMEOUT - Session check stuck, forcing login screen');
                     showLoginScreen();
-                    return false;
-                }
-
-                if (!session) {
-                    console.log('ℹ️ No session found - showing login screen');
-                    showLoginScreen();
-                    return false;
-                }
-
-                console.log('✅ Session found for:', session.user.email);
-                console.log('📊 Checking authorization in database...');
-
-                // Check if user is in authorized_users table
-                const { data: authorizedUser, error: authError } = await supabaseClient
-                    .from('authorized_users')
-                    .select('*')
-                    .eq('email', session.user.email)
-                    .eq('is_active', true)
-                    .single();
-
-                console.log('Authorization check result:', authorizedUser ? 'Authorized' : 'Not authorized', 'Error:', authError);
-
-                if (authError || !authorizedUser) {
-                    console.error('❌ User not authorized:', session.user.email, authError);
-                    await supabaseClient.auth.signOut();
-                    alert('Your account is not authorized to access this system. Please contact an administrator.');
-                    showLoginScreen();
-                    return false;
-                }
-
-                console.log('✅ User authorized:', authorizedUser.username);
-
-                // User is authenticated and authorized
-                currentUser = {
-                    username: authorizedUser.username,
-                    email: session.user.email,
-                    name: authorizedUser.full_name,
-                    role: authorizedUser.role
-                };
+                }, 5000);
                 
-                console.log('✅ Auth check complete - showing main app');
-                showMainApp();
-                return true;
+                try {
+                    // Try to get session with 4 second timeout
+                    const sessionPromise = supabaseClient.auth.getSession();
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Session timeout')), 4000)
+                    );
+                    
+                    const result = await Promise.race([sessionPromise, timeoutPromise]);
+                    
+                    // Clear force timeout since we got a response
+                    clearTimeout(forceLoginTimeout);
+                    
+                    const { data: { session }, error } = result;
+
+                    console.log('Session result:', session ? 'Found' : 'Not found', 'Error:', error);
+
+                    if (error) {
+                        console.error('❌ Session error:', error);
+                        showLoginScreen();
+                        return false;
+                    }
+
+                    if (!session) {
+                        console.log('ℹ️ No session found - showing login screen');
+                        showLoginScreen();
+                        return false;
+                    }
+
+                    console.log('✅ Session found for:', session.user.email);
+                    console.log('📊 Checking authorization in database...');
+
+                    // Check if user is in authorized_users table
+                    const { data: authorizedUser, error: authError } = await supabaseClient
+                        .from('authorized_users')
+                        .select('*')
+                        .eq('email', session.user.email)
+                        .eq('is_active', true)
+                        .single();
+
+                    console.log('Authorization check result:', authorizedUser ? 'Authorized' : 'Not authorized', 'Error:', authError);
+
+                    if (authError || !authorizedUser) {
+                        console.error('❌ User not authorized:', session.user.email, authError);
+                        await supabaseClient.auth.signOut();
+                        alert('Your account is not authorized to access this system. Please contact an administrator.');
+                        showLoginScreen();
+                        return false;
+                    }
+
+                    console.log('✅ User authorized:', authorizedUser.username);
+
+                    // User is authenticated and authorized
+                    currentUser = {
+                        username: authorizedUser.username,
+                        email: session.user.email,
+                        name: authorizedUser.full_name,
+                        role: authorizedUser.role
+                    };
+                    
+                    console.log('✅ Auth check complete - showing main app');
+                    showMainApp();
+                    return true;
+                    
+                } catch (timeoutError) {
+                    // Clear force timeout
+                    clearTimeout(forceLoginTimeout);
+                    console.error('❌ Session check timeout:', timeoutError.message);
+                    showLoginScreen();
+                    return false;
+                }
             } catch (error) {
                 console.error('❌ Auth check error:', error);
                 // Don't alert on timeout - just show login
@@ -1043,9 +1070,16 @@
             try {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
+                // Verify client is working
+                if (!supabaseClient || !supabaseClient.auth) {
+                    console.error('❌ Supabase client creation failed');
+                    updateConnectionStatus(false);
+                    return false;
+                }
+                
                 // Set up auth state listener to persist sessions
                 supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                    console.log('Auth state changed:', event, session);
+                    console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
                     
                     if (event === 'SIGNED_IN' && session) {
                         // User signed in - check if authorized
@@ -1056,15 +1090,20 @@
                         showLoginScreen();
                     } else if (event === 'TOKEN_REFRESHED') {
                         // Session token was refreshed
-                        console.log('Session refreshed');
+                        console.log('✅ Session refreshed');
                     } else if (event === 'USER_UPDATED') {
                         // User data updated
-                        console.log('User updated');
+                        console.log('ℹ️ User updated');
+                    } else if (event === 'INITIAL_SESSION') {
+                        // Initial session loaded
+                        console.log('ℹ️ Initial session:', session ? 'exists' : 'none');
                     }
                 });
                 
                 updateConnectionStatus(true);
                 console.log('✅ Supabase connected');
+                console.log('📍 Supabase URL:', SUPABASE_URL);
+                console.log('🔑 API Key (first 20 chars):', SUPABASE_ANON_KEY.substring(0, 20) + '...');
                 return true;
             } catch (error) {
                 console.error('❌ Supabase connection error:', error);
