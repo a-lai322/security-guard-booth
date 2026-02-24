@@ -797,13 +797,8 @@
             try {
                 console.log('📡 Getting session from Supabase...');
                 
-                // Add timeout to prevent infinite loading
-                const sessionPromise = supabaseClient.auth.getSession();
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Session check timeout')), 10000)
-                );
-                
-                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+                // Get session with simpler approach
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
 
                 console.log('Session result:', session ? 'Found' : 'Not found', 'Error:', error);
 
@@ -855,7 +850,10 @@
                 return true;
             } catch (error) {
                 console.error('❌ Auth check error:', error);
-                alert('Error checking authentication: ' + error.message + '. Redirecting to login.');
+                // Don't alert on timeout - just show login
+                if (error.message && !error.message.includes('timeout')) {
+                    console.error('Unexpected error during auth:', error);
+                }
                 showLoginScreen();
                 return false;
             }
@@ -1690,17 +1688,8 @@
                 
                 console.log('✅ Supabase initialized');
                 
-                // Add a safety timeout - if auth check takes too long, show login
-                const timeoutId = setTimeout(() => {
-                    console.warn('⚠️ Auth check taking too long - showing login screen');
-                    showLoginScreen();
-                }, 15000); // 15 second timeout
-                
                 // Check authentication (async - must await)
                 const isAuthenticated = await checkAuth();
-                
-                // Clear the timeout since we got a response
-                clearTimeout(timeoutId);
                 
                 if (isAuthenticated) {
                     console.log('✅ Authenticated - loading data...');
