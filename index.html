@@ -789,6 +789,11 @@
         // Check if user is authenticated on page load
         async function checkAuth() {
             console.log('🔍 Starting auth check...');
+            console.log('   Checking localStorage for saved session...');
+            
+            // Check if there's a session stored
+            const storedSession = localStorage.getItem('security-booth-auth');
+            console.log('   Stored session exists:', !!storedSession);
             
             if (!supabaseClient) {
                 console.error('❌ Supabase client not initialized');
@@ -819,7 +824,15 @@
                     
                     const { data: { session }, error } = result;
 
-                    console.log('Session result:', session ? 'Found' : 'Not found', 'Error:', error);
+                    console.log('Session result:', session ? '✅ Found' : '❌ Not found');
+                    if (session) {
+                        console.log('   User:', session.user.email);
+                        console.log('   Expires:', new Date(session.expires_at * 1000).toLocaleString());
+                        console.log('   Access token exists:', !!session.access_token);
+                    }
+                    if (error) {
+                        console.error('   Error:', error);
+                    }
 
                     if (error) {
                         console.error('❌ Session error:', error);
@@ -833,7 +846,6 @@
                         return false;
                     }
 
-                    console.log('✅ Session found for:', session.user.email);
                     console.log('📊 Checking authorization in database...');
 
                     // Check if user is in authorized_users table
@@ -844,10 +856,11 @@
                         .eq('is_active', true)
                         .single();
 
-                    console.log('Authorization check result:', authorizedUser ? 'Authorized' : 'Not authorized', 'Error:', authError);
+                    console.log('Authorization result:', authorizedUser ? '✅ Authorized' : '❌ Not authorized');
+                    if (authError) console.error('   Auth error:', authError);
 
                     if (authError || !authorizedUser) {
-                        console.error('❌ User not authorized:', session.user.email, authError);
+                        console.error('❌ User not authorized:', session.user.email);
                         await supabaseClient.auth.signOut();
                         alert('Your account is not authorized to access this system. Please contact an administrator.');
                         showLoginScreen();
@@ -1068,7 +1081,16 @@
             }
 
             try {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                // Create Supabase client with session persistence enabled
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true,
+                        storage: window.localStorage,
+                        storageKey: 'security-booth-auth'
+                    }
+                });
                 
                 // Verify client is working
                 if (!supabaseClient || !supabaseClient.auth) {
@@ -1077,26 +1099,29 @@
                     return false;
                 }
                 
+                console.log('✅ Supabase client created with persistent sessions');
+                
                 // Set up auth state listener to persist sessions
                 supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                    console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+                    console.log('🔔 Auth state changed:', event);
+                    console.log('   Session:', session ? `exists (expires: ${new Date(session.expires_at * 1000).toLocaleString()})` : 'none');
                     
-                    if (event === 'SIGNED_IN' && session) {
-                        // User signed in - check if authorized
-                        await checkAuth();
+                    if (event === 'INITIAL_SESSION') {
+                        console.log('ℹ️ Initial session loaded from storage');
+                        if (session) {
+                            console.log('   User:', session.user.email);
+                        }
+                    } else if (event === 'SIGNED_IN' && session) {
+                        console.log('✅ User signed in:', session.user.email);
+                        // Don't call checkAuth here - it's already called by login flow
                     } else if (event === 'SIGNED_OUT') {
-                        // User signed out
+                        console.log('👋 User signed out');
                         currentUser = null;
                         showLoginScreen();
                     } else if (event === 'TOKEN_REFRESHED') {
-                        // Session token was refreshed
-                        console.log('✅ Session refreshed');
+                        console.log('🔄 Session token refreshed');
                     } else if (event === 'USER_UPDATED') {
-                        // User data updated
-                        console.log('ℹ️ User updated');
-                    } else if (event === 'INITIAL_SESSION') {
-                        // Initial session loaded
-                        console.log('ℹ️ Initial session:', session ? 'exists' : 'none');
+                        console.log('ℹ️ User data updated');
                     }
                 });
                 
@@ -1104,6 +1129,7 @@
                 console.log('✅ Supabase connected');
                 console.log('📍 Supabase URL:', SUPABASE_URL);
                 console.log('🔑 API Key (first 20 chars):', SUPABASE_ANON_KEY.substring(0, 20) + '...');
+                console.log('💾 Storage key:', 'security-booth-auth');
                 return true;
             } catch (error) {
                 console.error('❌ Supabase connection error:', error);
