@@ -1560,120 +1560,116 @@
             try {
                 console.log(`📹 Starting ${type} camera...`);
                 
-                // Disable capture button initially
+                // Get elements
                 const captureBtn = document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`);
                 const video = document.getElementById(`${type}Video`);
+                const overlay = document.getElementById(`${type}Overlay`);
                 
+                // Disable capture button initially
                 captureBtn.disabled = true;
                 captureBtn.textContent = '⏳ Loading camera...';
                 
                 // Hide any previous preview
                 document.getElementById(`${type}Preview`).style.display = 'none';
                 
-                // Request highest quality camera settings
+                // Request camera with good quality settings
                 const constraints = {
                     video: {
-                        facingMode: 'environment', // Use back camera on mobile
-                        width: { ideal: 1920 },    // Full HD width
-                        height: { ideal: 1080 },   // Full HD height
-                        aspectRatio: { ideal: 16/9 },
-                        frameRate: { ideal: 30 },
-                        focusMode: 'continuous',   // Keep auto-focusing
-                        // For better document/license plate capture:
-                        focusDistance: { ideal: 0 },
-                        // Request better quality
-                        resizeMode: 'none',
-                        // Advanced: if supported, request even higher
-                        advanced: [
-                            { width: 2560, height: 1440 }, // 2K
-                            { width: 3840, height: 2160 }, // 4K
-                        ]
+                        facingMode: 'environment',
+                        width: { ideal: 1920, min: 640 },
+                        height: { ideal: 1080, min: 480 }
                     },
                     audio: false
                 };
                 
                 console.log('📡 Requesting camera access...');
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                
                 console.log('✅ Camera access granted');
+                
+                // Store stream
                 currentStream = stream;
                 
-                // Set up video element
+                // Set up video
                 video.srcObject = stream;
                 video.style.display = 'block';
-                video.setAttribute('playsinline', 'true');
-                video.setAttribute('autoplay', 'true');
                 
-                // Wait for video to load and start playing
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Video load timeout'));
-                    }, 5000);
+                // Force video to play
+                try {
+                    await video.play();
+                    console.log('▶️ Video play started');
+                } catch (playError) {
+                    console.log('ℹ️ Auto-play may have been blocked, will try again');
+                }
+                
+                // Simple wait for video to be ready
+                console.log('⏳ Waiting for video to be ready...');
+                let attempts = 0;
+                const maxAttempts = 50; // 5 seconds max
+                
+                while (attempts < maxAttempts) {
+                    // Check if video has dimensions
+                    if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                        console.log(`✅ Video ready! ${video.videoWidth}x${video.videoHeight}, readyState: ${video.readyState}`);
+                        break;
+                    }
                     
-                    video.onloadedmetadata = async () => {
-                        console.log('📹 Video metadata loaded');
+                    // Try to play again if not playing
+                    if (video.paused) {
                         try {
                             await video.play();
-                            console.log('▶️ Video playing');
-                            clearTimeout(timeout);
-                            resolve();
-                        } catch (playError) {
-                            console.error('Play error:', playError);
-                            clearTimeout(timeout);
-                            reject(playError);
+                        } catch (e) {
+                            // Ignore play errors
                         }
-                    };
-                    
-                    // In case loadedmetadata already fired
-                    if (video.readyState >= 1) {
-                        video.play().then(() => {
-                            clearTimeout(timeout);
-                            resolve();
-                        }).catch(reject);
                     }
-                });
-                
-                // Wait for video to be fully ready (has dimensions)
-                let attempts = 0;
-                while ((!video.videoWidth || !video.videoHeight) && attempts < 20) {
+                    
                     await new Promise(resolve => setTimeout(resolve, 100));
                     attempts++;
+                    
+                    if (attempts % 10 === 0) {
+                        console.log(`⏳ Still waiting... (${attempts * 100}ms) - videoWidth: ${video.videoWidth}, readyState: ${video.readyState}`);
+                    }
                 }
                 
-                if (!video.videoWidth || !video.videoHeight) {
-                    throw new Error('Video failed to initialize properly');
+                // Check if we succeeded
+                if (video.videoWidth === 0 || video.videoHeight === 0) {
+                    throw new Error(`Video failed to initialize after ${maxAttempts * 100}ms. Width: ${video.videoWidth}, Height: ${video.videoHeight}, ReadyState: ${video.readyState}`);
                 }
                 
-                console.log('📐 Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+                // Show overlay
+                overlay.style.display = 'flex';
                 
-                // Show camera overlay
-                document.getElementById(`${type}Overlay`).style.display = 'flex';
-                
-                // Log actual resolution for debugging
-                const videoTrack = stream.getVideoTracks()[0];
-                const settings = videoTrack.getSettings();
-                console.log('✅ Camera ready:', {
+                // Log camera info
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                console.log('📹 Camera info:', {
                     type: type,
                     resolution: `${settings.width}x${settings.height}`,
-                    videoResolution: `${video.videoWidth}x${video.videoHeight}`,
-                    frameRate: settings.frameRate,
-                    facingMode: settings.facingMode,
+                    videoSize: `${video.videoWidth}x${video.videoHeight}`,
+                    facing: settings.facingMode,
                     readyState: video.readyState
                 });
                 
-                // Enable capture button now that camera is ready
+                // Enable capture button
                 captureBtn.disabled = false;
                 captureBtn.textContent = '📸 Capture Photo';
-                captureBtn.style.display = 'inline-block';
+                
+                console.log('✅ Camera fully ready for', type);
                 
             } catch (error) {
                 console.error('❌ Camera error:', error);
-                alert(`Unable to access camera: ${error.message}\n\nPlease ensure:\n1. Camera permissions are granted\n2. Camera is not in use by another app\n3. You are using HTTPS`);
                 
-                // Re-enable button for retry
+                // Stop any stream that might have started
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                    currentStream = null;
+                }
+                
                 const captureBtn = document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`);
                 captureBtn.disabled = false;
                 captureBtn.textContent = '🔄 Retry Camera';
+                captureBtn.onclick = () => startCamera(type);
+                
+                alert(`Camera Error: ${error.message}\n\nTroubleshooting:\n• Allow camera permissions\n• Close other apps using camera\n• Try refreshing the page\n• Make sure you're using HTTPS`);
             }
         }
 
