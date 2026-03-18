@@ -893,7 +893,6 @@
                         <video id="licensePlateVideo" autoplay playsinline onclick="capturePhoto('licensePlate')"></video>
                         <img id="licensePlatePreview" class="preview-img" style="display: none;">
                         <div class="camera-overlay" id="licensePlateOverlay" onclick="capturePhoto('licensePlate')">
-                            <div class="capture-hint">📷 Tap anywhere to capture</div>
                         </div>
                         <div id="licensePlateButtons" class="camera-controls">
                             <button class="btn btn-capture" id="captureLicensePlate" onclick="capturePhoto('licensePlate')">
@@ -912,7 +911,6 @@
                         <video id="idCardVideo" autoplay playsinline onclick="capturePhoto('idCard')"></video>
                         <img id="idCardPreview" class="preview-img" style="display: none;">
                         <div class="camera-overlay" id="idCardOverlay" onclick="capturePhoto('idCard')">
-                            <div class="capture-hint">📷 Tap anywhere to capture</div>
                         </div>
                         <div id="idCardButtons" class="camera-controls">
                             <button class="btn btn-capture" id="captureIdCard" onclick="capturePhoto('idCard')">
@@ -1265,6 +1263,49 @@
         }
 
         // Show main app
+        // ==========================================
+        // CAMERA PERMISSION CHECK
+        // ==========================================
+        async function checkCameraPermission() {
+            try {
+                console.log('📹 Checking camera permission...');
+                
+                // Check if permission API is available
+                if (!navigator.permissions || !navigator.permissions.query) {
+                    console.log('ℹ️ Permissions API not available, will request on first use');
+                    return;
+                }
+                
+                // Query camera permission
+                const result = await navigator.permissions.query({ name: 'camera' });
+                console.log('📹 Camera permission status:', result.state);
+                
+                if (result.state === 'prompt') {
+                    // Permission not yet granted - request it
+                    console.log('📹 Requesting camera permission...');
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: { facingMode: 'environment' } 
+                        });
+                        console.log('✅ Camera permission granted');
+                        // Stop the test stream immediately
+                        stream.getTracks().forEach(track => track.stop());
+                    } catch (err) {
+                        console.warn('⚠️ Camera permission denied or not available:', err.message);
+                        alert('Camera access is required for this app.\n\nPlease allow camera access when prompted, or enable it in your browser settings.\n\nThe app will still work, but you\'ll be prompted again when you try to capture photos.');
+                    }
+                } else if (result.state === 'denied') {
+                    console.warn('⚠️ Camera permission denied');
+                    alert('Camera access is currently blocked.\n\nTo use this app, please:\n1. Click the camera icon in your browser\'s address bar\n2. Allow camera access\n3. Refresh the page');
+                } else {
+                    console.log('✅ Camera permission already granted');
+                }
+            } catch (err) {
+                console.log('ℹ️ Could not check camera permission:', err.message);
+                // Not critical - will request permission when camera is needed
+            }
+        }
+
         function showMainApp() {
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('login-screen').style.display = 'none';
@@ -1273,6 +1314,11 @@
             if (currentUser) {
                 console.log(`✅ Logged in as: ${currentUser.name || currentUser.email} (${currentUser.role})`);
             }
+            
+            // Check camera permission after login
+            setTimeout(() => {
+                checkCameraPermission();
+            }, 500);
         }
 
         // Allow Enter key to submit login
