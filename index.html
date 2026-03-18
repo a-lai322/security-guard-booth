@@ -351,6 +351,99 @@
             border-color: #667eea;
         }
 
+        /* Pagination Styles */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .pagination-size {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pagination-size label {
+            font-size: 14px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .pagination-size select {
+            padding: 6px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .pagination-size select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .pagination-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            min-width: 35px;
+            height: 35px;
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .records-list {
             margin-top: 20px;
         }
@@ -621,6 +714,38 @@
             .camera-container {
                 padding: 15px;
             }
+
+            /* Pagination mobile styles */
+            .pagination-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pagination-info,
+            .pagination-size {
+                justify-content: center;
+            }
+
+            .pagination-nav {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .page-numbers {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .page-btn {
+                min-width: 32px;
+                height: 32px;
+                font-size: 13px;
+            }
+
+            #prevPageBtn,
+            #nextPageBtn {
+                width: 100%;
+            }
         }
 
         @media (max-width: 480px) {
@@ -756,7 +881,32 @@
                 <div class="search-box">
                     <input type="text" id="recordsSearch" placeholder="Search by check-in/out time or ID..." oninput="searchAllRecords()">
                 </div>
+                
+                <!-- Pagination Controls -->
+                <div class="pagination-controls">
+                    <div class="pagination-info">
+                        <span id="recordsCount">Showing 0 records</span>
+                    </div>
+                    <div class="pagination-size">
+                        <label>Records per page:</label>
+                        <select id="pageSize" onchange="changePageSize()">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <div id="allRecordsList" class="records-list"></div>
+                
+                <!-- Page Navigation -->
+                <div class="pagination-nav">
+                    <button class="btn btn-secondary" id="prevPageBtn" onclick="previousPage()" disabled>← Previous</button>
+                    <div class="page-numbers" id="pageNumbers"></div>
+                    <button class="btn btn-secondary" id="nextPageBtn" onclick="nextPage()" disabled>Next →</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1289,15 +1439,44 @@
         // ==========================================
         async function startCamera(type) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' },
-                    audio: false 
-                });
+                // Request highest quality camera settings
+                const constraints = {
+                    video: {
+                        facingMode: 'environment', // Use back camera on mobile
+                        width: { ideal: 1920 },    // Full HD width
+                        height: { ideal: 1080 },   // Full HD height
+                        aspectRatio: { ideal: 16/9 },
+                        frameRate: { ideal: 30 },
+                        focusMode: 'continuous',   // Keep auto-focusing
+                        // For better document/license plate capture:
+                        focusDistance: { ideal: 0 },
+                        // Request better quality
+                        resizeMode: 'none',
+                        // Advanced: if supported, request even higher
+                        advanced: [
+                            { width: 2560, height: 1440 }, // 2K
+                            { width: 3840, height: 2160 }, // 4K
+                        ]
+                    },
+                    audio: false
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
                 currentStream = stream;
                 const video = document.getElementById(`${type}Video`);
                 video.srcObject = stream;
                 video.classList.add('active');
+                
+                // Log actual resolution for debugging
+                const videoTrack = stream.getVideoTracks()[0];
+                const settings = videoTrack.getSettings();
+                console.log('📹 Camera started:', {
+                    resolution: `${settings.width}x${settings.height}`,
+                    frameRate: settings.frameRate,
+                    facingMode: settings.facingMode,
+                    focusMode: settings.focusMode
+                });
                 
                 document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'inline-block';
             } catch (error) {
@@ -1311,11 +1490,22 @@
             const canvas = document.getElementById('canvas');
             const preview = document.getElementById(`${type}Preview`);
             
+            // Use the actual video dimensions for full quality
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
             
-            const photoData = canvas.toDataURL('image/jpeg', 0.8);
+            console.log('📸 Capturing photo:', {
+                resolution: `${canvas.width}x${canvas.height}`,
+                type: type
+            });
+            
+            // Draw image to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to JPEG with 95% quality (was 80%)
+            // Higher quality = sharper images, slightly larger file size
+            const photoData = canvas.toDataURL('image/jpeg', 0.95);
             
             if (type === 'licensePlate') {
                 licensePlatePhoto = photoData;
@@ -1327,6 +1517,7 @@
             preview.style.display = 'block';
             video.classList.remove('active');
             
+            // Stop camera
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
                 currentStream = null;
@@ -1463,18 +1654,57 @@
             `).join('');
         }
 
+        // ==========================================
+        // PAGINATION VARIABLES
+        // ==========================================
+        let currentPage = 1;
+        let pageSize = 10;
+        let filteredVisitors = [];
+
         function displayAllRecords(searchTerm = '') {
             const container = document.getElementById('allRecordsList');
             
-            let filteredVisitors = visitors;
+            // Filter visitors based on search
             if (searchTerm) {
                 filteredVisitors = visitors.filter(v => 
                     formatDateTime(v.checkInTime).toLowerCase().includes(searchTerm.toLowerCase()) ||
                     (v.checkOutTime && formatDateTime(v.checkOutTime).toLowerCase().includes(searchTerm.toLowerCase())) ||
                     v.id.toString().includes(searchTerm)
                 );
+            } else {
+                filteredVisitors = [...visitors];
             }
 
+            // Reset to page 1 when search changes
+            currentPage = 1;
+
+            // Display paginated results
+            displayPaginatedRecords();
+        }
+
+        function displayPaginatedRecords() {
+            const container = document.getElementById('allRecordsList');
+            const totalRecords = filteredVisitors.length;
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            
+            // Ensure current page is valid
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            // Update records count
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalRecords);
+            document.getElementById('recordsCount').textContent = 
+                `Showing ${totalRecords > 0 ? startIndex + 1 : 0}-${endIndex} of ${totalRecords} records`;
+
+            // Get records for current page
+            const pageRecords = filteredVisitors.slice(startIndex, endIndex);
+
+            // Display empty state if no records
             if (filteredVisitors.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -1485,10 +1715,12 @@
                         <p>Start by checking in visitors.</p>
                     </div>
                 `;
+                updatePaginationButtons(0);
                 return;
             }
 
-            container.innerHTML = filteredVisitors.map(visitor => `
+            // Display records for current page
+            container.innerHTML = pageRecords.map(visitor => `
                 <div class="record-card">
                     <div class="record-header">
                         <h3 style="color: #2d3748;">Visitor #${visitor.id}</h3>
@@ -1524,6 +1756,91 @@
                     </div>
                 </div>
             `).join('');
+
+            // Update pagination controls
+            updatePaginationButtons(totalPages);
+        }
+
+        function updatePaginationButtons(totalPages) {
+            const pageNumbersContainer = document.getElementById('pageNumbers');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+
+            // Update prev/next buttons
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
+
+            // Generate page number buttons
+            if (totalPages === 0) {
+                pageNumbersContainer.innerHTML = '';
+                return;
+            }
+
+            let pageButtons = '';
+            const maxVisiblePages = 7;
+
+            if (totalPages <= maxVisiblePages) {
+                // Show all pages if total is small
+                for (let i = 1; i <= totalPages; i++) {
+                    pageButtons += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                }
+            } else {
+                // Show first page
+                pageButtons += `<button class="page-btn ${1 === currentPage ? 'active' : ''}" onclick="goToPage(1)">1</button>`;
+
+                // Show ellipsis or pages around current
+                if (currentPage > 3) {
+                    pageButtons += `<button class="page-btn" disabled>...</button>`;
+                }
+
+                // Show pages around current page
+                const startPage = Math.max(2, currentPage - 1);
+                const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+                for (let i = startPage; i <= endPage; i++) {
+                    pageButtons += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                }
+
+                // Show ellipsis before last page
+                if (currentPage < totalPages - 2) {
+                    pageButtons += `<button class="page-btn" disabled>...</button>`;
+                }
+
+                // Show last page
+                pageButtons += `<button class="page-btn ${totalPages === currentPage ? 'active' : ''}" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            pageNumbersContainer.innerHTML = pageButtons;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            displayPaginatedRecords();
+            // Scroll to top of records list
+            document.getElementById('allRecordsList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                displayPaginatedRecords();
+                document.getElementById('allRecordsList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredVisitors.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayPaginatedRecords();
+                document.getElementById('allRecordsList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('pageSize').value);
+            currentPage = 1; // Reset to first page
+            displayPaginatedRecords();
         }
 
         // ==========================================
