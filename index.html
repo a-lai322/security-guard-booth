@@ -1558,6 +1558,18 @@
         // ==========================================
         async function startCamera(type) {
             try {
+                console.log(`📹 Starting ${type} camera...`);
+                
+                // Disable capture button initially
+                const captureBtn = document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                const video = document.getElementById(`${type}Video`);
+                
+                captureBtn.disabled = true;
+                captureBtn.textContent = '⏳ Loading camera...';
+                
+                // Hide any previous preview
+                document.getElementById(`${type}Preview`).style.display = 'none';
+                
                 // Request highest quality camera settings
                 const constraints = {
                     video: {
@@ -1580,12 +1592,59 @@
                     audio: false
                 };
                 
+                console.log('📡 Requesting camera access...');
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
+                console.log('✅ Camera access granted');
                 currentStream = stream;
-                const video = document.getElementById(`${type}Video`);
+                
+                // Set up video element
                 video.srcObject = stream;
                 video.style.display = 'block';
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('autoplay', 'true');
+                
+                // Wait for video to load and start playing
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Video load timeout'));
+                    }, 5000);
+                    
+                    video.onloadedmetadata = async () => {
+                        console.log('📹 Video metadata loaded');
+                        try {
+                            await video.play();
+                            console.log('▶️ Video playing');
+                            clearTimeout(timeout);
+                            resolve();
+                        } catch (playError) {
+                            console.error('Play error:', playError);
+                            clearTimeout(timeout);
+                            reject(playError);
+                        }
+                    };
+                    
+                    // In case loadedmetadata already fired
+                    if (video.readyState >= 1) {
+                        video.play().then(() => {
+                            clearTimeout(timeout);
+                            resolve();
+                        }).catch(reject);
+                    }
+                });
+                
+                // Wait for video to be fully ready (has dimensions)
+                let attempts = 0;
+                while ((!video.videoWidth || !video.videoHeight) && attempts < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!video.videoWidth || !video.videoHeight) {
+                    throw new Error('Video failed to initialize properly');
+                }
+                
+                console.log('📐 Video dimensions:', video.videoWidth, 'x', video.videoHeight);
                 
                 // Show camera overlay
                 document.getElementById(`${type}Overlay`).style.display = 'flex';
@@ -1593,19 +1652,28 @@
                 // Log actual resolution for debugging
                 const videoTrack = stream.getVideoTracks()[0];
                 const settings = videoTrack.getSettings();
-                console.log('📹 Camera started:', {
+                console.log('✅ Camera ready:', {
                     type: type,
                     resolution: `${settings.width}x${settings.height}`,
+                    videoResolution: `${video.videoWidth}x${video.videoHeight}`,
                     frameRate: settings.frameRate,
                     facingMode: settings.facingMode,
-                    focusMode: settings.focusMode
+                    readyState: video.readyState
                 });
                 
-                // Show capture button
-                document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'inline-block';
+                // Enable capture button now that camera is ready
+                captureBtn.disabled = false;
+                captureBtn.textContent = '📸 Capture Photo';
+                captureBtn.style.display = 'inline-block';
+                
             } catch (error) {
-                alert('Unable to access camera. Please ensure camera permissions are granted.');
-                console.error('Camera error:', error);
+                console.error('❌ Camera error:', error);
+                alert(`Unable to access camera: ${error.message}\n\nPlease ensure:\n1. Camera permissions are granted\n2. Camera is not in use by another app\n3. You are using HTTPS`);
+                
+                // Re-enable button for retry
+                const captureBtn = document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                captureBtn.disabled = false;
+                captureBtn.textContent = '🔄 Retry Camera';
             }
         }
 
@@ -1613,6 +1681,24 @@
             const video = document.getElementById(`${type}Video`);
             const canvas = document.getElementById('canvas');
             const preview = document.getElementById(`${type}Preview`);
+            const captureBtn = document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            
+            // Check if button is disabled (camera not ready)
+            if (captureBtn.disabled) {
+                console.warn('⚠️ Capture button disabled - camera not ready');
+                return;
+            }
+            
+            // Check if video is actually playing and has valid dimensions
+            if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
+                console.warn('⚠️ Camera not ready:', {
+                    videoWidth: video.videoWidth,
+                    videoHeight: video.videoHeight,
+                    readyState: video.readyState
+                });
+                alert('Camera is still starting. Please wait for the camera feed to appear.');
+                return;
+            }
             
             // Use the actual video dimensions for full quality
             canvas.width = video.videoWidth;
@@ -1639,7 +1725,7 @@
             
             preview.src = photoData;
             preview.style.display = 'block';
-            video.classList.remove('active');
+            video.style.display = 'none';
             
             // Stop camera
             if (currentStream) {
@@ -1651,7 +1737,7 @@
             document.getElementById(`${type}Overlay`).style.display = 'none';
             
             // Update buttons
-            document.getElementById(`capture${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'none';
+            captureBtn.style.display = 'none';
             document.getElementById(`retake${type.charAt(0).toUpperCase() + type.slice(1)}`).style.display = 'inline-block';
             
             // Auto-progress to next step
