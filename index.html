@@ -1315,9 +1315,15 @@
                 console.log(`✅ Logged in as: ${currentUser.name || currentUser.email} (${currentUser.role})`);
             }
             
-            // Check camera permission after login
-            setTimeout(() => {
-                checkCameraPermission();
+            // First check camera permission, then start camera
+            setTimeout(async () => {
+                await checkCameraPermission();
+                
+                // After permission check, start the camera for check-in tab
+                console.log('🎬 Auto-starting camera for Check-In tab...');
+                setTimeout(() => {
+                    startCamera('licensePlate');
+                }, 300);
             }, 500);
         }
 
